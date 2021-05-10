@@ -15,11 +15,21 @@ class TasksController extends Controller
      */
     public function index()
     {
-        $tasks = Task::all();
-        
-        return view("tasks.index", [
-            "tasks" => $tasks,
-        ]);
+        $data = [];
+        if (\Auth::check()) { // 認証済みの場合
+            // 認証済みユーザを取得
+            $user = \Auth::user();
+            $tasks = $user->tasks()->orderBy('created_at', 'desc')->paginate(50);
+
+            $data = [
+                'user' => $user,
+                'tasks' => $tasks,
+            ];
+        }
+
+        // Welcomeビューでそれらを表示
+        return view('welcome', $data);
+    
     }
 
     /**
@@ -51,13 +61,14 @@ class TasksController extends Controller
             'content' => 'required|max:255',
         ]);
         
+        
         // タスクを作成
-        $task = new task;
-        $task->status = $request->status;
-        $task->content = $request->content;
-        $task->save();
+        $request->user()->tasks()->create([
+            'status' => $request->status,
+            'content' => $request->content,
+        ]);
 
-        // トップページへリダイレクト
+        // 前ページへリダイレクト
         return redirect('/');
     }
 
